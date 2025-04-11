@@ -10,6 +10,7 @@ import CreateToken from "./pages/CreateToken";
 import TokenSuccess from "./pages/TokenSuccess";
 import NotFound from "./pages/NotFound";
 
+// Create a client
 const queryClient = new QueryClient();
 
 const App = () => (

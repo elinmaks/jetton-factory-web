@@ -3,9 +3,12 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import MarketCard from '@/components/MarketCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTonConnect } from '@/contexts/TonConnectContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, LayoutGrid, LineChart, Sparkles } from 'lucide-react';
+import MarketCard from '@/components/MarketCard';
+import TokenLeaderboard from '@/components/TokenLeaderboard';
+import NFTCollections from '@/components/NFTCollections';
 
 const Index = () => {
   const { connected, connecting, connectWallet } = useTonConnect();
@@ -47,14 +50,53 @@ const Index = () => {
             TokenForge
           </h1>
           <p className="text-gray-300 mt-2">
-            Top trending token of the day
+            The Ultimate TON Token Platform
           </p>
         </div>
 
-        <MarketCard 
-          onBuyClick={handleBuyClick}
-          onSellClick={handleSellClick}
-        />
+        <Tabs defaultValue="featured" className="w-full max-w-4xl mb-8">
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="featured" className="data-[state=active]:bg-ton-blue data-[state=active]:text-white">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Featured
+            </TabsTrigger>
+            <TabsTrigger value="market" className="data-[state=active]:bg-ton-blue data-[state=active]:text-white">
+              <LineChart className="mr-2 h-4 w-4" />
+              Market
+            </TabsTrigger>
+            <TabsTrigger value="nft" className="data-[state=active]:bg-ton-blue data-[state=active]:text-white">
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              NFTs
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="featured" className="mt-0">
+            <div className="flex flex-col items-center">
+              <MarketCard 
+                onBuyClick={handleBuyClick}
+                onSellClick={handleSellClick}
+              />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="market" className="mt-0">
+            <div className="bg-ton-card rounded-lg p-4 shadow-lg border border-ton-blue/20">
+              <h3 className="text-xl font-bold text-white mb-4">
+                Trending Tokens
+              </h3>
+              <TokenLeaderboard />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="nft" className="mt-0">
+            <div className="bg-ton-card rounded-lg p-4 shadow-lg border border-ton-blue/20">
+              <h3 className="text-xl font-bold text-white mb-4">
+                Popular Collections
+              </h3>
+              <NFTCollections />
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <footer className="mt-8 text-center text-gray-400 text-sm">
           <p>
