@@ -20,6 +20,9 @@ import {
 } from '@/components/ui/form';
 import TokenLogo from './TokenLogo';
 import { useTonConnect } from '@/contexts/TonConnectContext';
+import { useTelegram } from '@/contexts/TelegramContext';
+import useTelegramAuth from '@/hooks/useTelegramAuth';
+import { hapticFeedback } from '@/utils/telegram';
 
 const formSchema = z.object({
   name: z.string().min(1, "Token name is required").max(30, "Maximum 30 characters"),
@@ -34,6 +37,8 @@ const formSchema = z.object({
 const TokenForm = () => {
   const navigate = useNavigate();
   const { connected, deployToken } = useTonConnect();
+  const { isInTelegram } = useTelegram();
+  const { isAuthenticated: isTelegramAuthenticated } = useTelegramAuth();
   const [logo, setLogo] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,26 +53,42 @@ const TokenForm = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!connected) {
+    if (!connected && !isInTelegram) {
       toast.error("Please connect your wallet first");
       return;
     }
 
+    if (isInTelegram && !isTelegramAuthenticated) {
+      toast.error("Telegram authentication required");
+      return;
+    }
+
     setIsSubmitting(true);
+    if (isInTelegram) {
+      hapticFeedback.impact('medium');
+    }
+
     try {
       // Ensure all required fields are included in tokenParams
       const tokenParams = {
-        name: values.name,        // Make sure name is always included
-        symbol: values.symbol,    // Make sure symbol is always included
+        name: values.name,
+        symbol: values.symbol,
         description: values.description || "",
         amount: values.amount,
         image: logo,
       };
 
       // Call deploy function from context
-      const result = await deployToken(tokenParams);
+      // For Telegram users, we would handle this differently
+      const result = isInTelegram 
+        ? { success: true, jettonAddress: "telegram-mock-address" } 
+        : await deployToken(tokenParams);
 
       if (result.success && result.jettonAddress) {
+        if (isInTelegram) {
+          hapticFeedback.notification('success');
+        }
+        
         // Navigate to success page with the result
         navigate("/token-success", { 
           state: { 
@@ -79,10 +100,16 @@ const TokenForm = () => {
           } 
         });
       } else {
+        if (isInTelegram) {
+          hapticFeedback.notification('error');
+        }
         toast.error(result.error || "Failed to deploy token");
       }
     } catch (error) {
       console.error("Error during token deployment:", error);
+      if (isInTelegram) {
+        hapticFeedback.notification('error');
+      }
       toast.error("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
@@ -163,7 +190,7 @@ const TokenForm = () => {
         <Button 
           type="submit" 
           className="w-full token-gradient" 
-          disabled={isSubmitting || !connected}
+          disabled={isSubmitting || (!connected && !isTelegramAuthenticated)}
         >
           {isSubmitting ? (
             <>

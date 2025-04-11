@@ -1,32 +1,62 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTonConnect } from '@/contexts/TonConnectContext';
+import { useTelegram } from '@/contexts/TelegramContext';
 import { Loader2, LayoutGrid, LineChart, Sparkles } from 'lucide-react';
 import MarketCard from '@/components/MarketCard';
 import TokenLeaderboard from '@/components/TokenLeaderboard';
 import NFTCollections from '@/components/NFTCollections';
+import TelegramAuth from '@/components/TelegramAuth';
+import { hapticFeedback, telegramMainButton } from '@/utils/telegram';
 
 const Index = () => {
   const { connected, connecting, connectWallet } = useTonConnect();
+  const { isInTelegram } = useTelegram();
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [sellDialogOpen, setSellDialogOpen] = useState(false);
   const [amount, setAmount] = useState('');
 
+  // Setup Telegram Main Button
+  useEffect(() => {
+    if (isInTelegram) {
+      telegramMainButton.setText('Create Token');
+      telegramMainButton.onClick(() => {
+        window.location.href = '/create-token';
+      });
+      telegramMainButton.show();
+    }
+
+    return () => {
+      if (isInTelegram) {
+        telegramMainButton.hide();
+      }
+    };
+  }, [isInTelegram]);
+
   const handleBuyClick = () => {
+    if (isInTelegram) {
+      hapticFeedback.impact('medium');
+    }
     setBuyDialogOpen(true);
   };
 
   const handleSellClick = () => {
+    if (isInTelegram) {
+      hapticFeedback.impact('medium');
+    }
     setSellDialogOpen(true);
   };
 
   const handleConfirmBuy = () => {
     // This would be where you handle the buy transaction
     // Just a mock for now
+    if (isInTelegram) {
+      hapticFeedback.notification('success');
+    }
     setTimeout(() => {
       setBuyDialogOpen(false);
       setAmount('');
@@ -36,6 +66,9 @@ const Index = () => {
   const handleConfirmSell = () => {
     // This would be where you handle the sell transaction
     // Just a mock for now
+    if (isInTelegram) {
+      hapticFeedback.notification('success');
+    }
     setTimeout(() => {
       setSellDialogOpen(false);
       setAmount('');
@@ -99,27 +132,31 @@ const Index = () => {
         </Tabs>
 
         <footer className="mt-8 text-center text-gray-400 text-sm">
-          <p>
-            {!connected ? (
-              <Button 
-                variant="link" 
-                className="text-ton-blue" 
-                onClick={connectWallet}
-              >
-                {connecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  "Connect your wallet"
-                )}
-              </Button>
-            ) : (
-              "Wallet connected"
-            )}
-            {' '}to create your token or start mining
-          </p>
+          {isInTelegram ? (
+            <TelegramAuth />
+          ) : (
+            <p>
+              {!connected ? (
+                <Button 
+                  variant="link" 
+                  className="text-ton-blue" 
+                  onClick={connectWallet}
+                >
+                  {connecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    "Connect your wallet"
+                  )}
+                </Button>
+              ) : (
+                "Wallet connected"
+              )}
+              {' '}to create your token or start mining
+            </p>
+          )}
         </footer>
 
         {/* Buy Dialog */}

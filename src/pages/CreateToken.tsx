@@ -1,16 +1,37 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, Rocket, Shield, Zap, Info, CheckCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import TokenForm from '@/components/TokenForm';
 import ConnectWallet from '@/components/ConnectWallet';
+import TelegramAuth from '@/components/TelegramAuth';
 import { useTonConnect } from '@/contexts/TonConnectContext';
+import { useTelegram } from '@/contexts/TelegramContext';
+import { telegramBackButton } from '@/utils/telegram';
 
 const CreateToken = () => {
   const { connected } = useTonConnect();
+  const { isInTelegram } = useTelegram();
+  const navigate = useNavigate();
+
+  // Setup Telegram Back Button
+  useEffect(() => {
+    if (isInTelegram) {
+      telegramBackButton.show();
+      telegramBackButton.onClick(() => {
+        navigate('/');
+      });
+    }
+
+    return () => {
+      if (isInTelegram) {
+        telegramBackButton.hide();
+      }
+    };
+  }, [isInTelegram, navigate]);
 
   return (
     <div className="telegram-app bg-ton-background dark:bg-ton-background">
@@ -35,17 +56,23 @@ const CreateToken = () => {
 
         <Card className="w-full max-w-md bg-ton-card border-ton-blue/20 shadow-lg mb-6">
           <CardHeader className="flex flex-col items-center">
-            <CardTitle className="text-white">Connect Wallet</CardTitle>
+            <CardTitle className="text-white">
+              {isInTelegram ? 'Telegram Account' : 'Connect Wallet'}
+            </CardTitle>
             <CardDescription className="text-gray-400">
-              Connect your TON wallet to continue
+              {isInTelegram 
+                ? 'Using your Telegram account' 
+                : 'Connect your TON wallet to continue'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ConnectWallet className="py-4" />
+            {isInTelegram 
+              ? <TelegramAuth className="py-4" /> 
+              : <ConnectWallet className="py-4" />}
           </CardContent>
         </Card>
 
-        {connected && (
+        {(connected || isInTelegram) && (
           <>
             <Tabs defaultValue="standard" className="w-full max-w-md mb-6">
               <TabsList className="grid w-full grid-cols-2">
