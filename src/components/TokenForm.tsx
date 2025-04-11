@@ -55,9 +55,12 @@ const TokenForm = () => {
 
     setIsSubmitting(true);
     try {
-      // Convert to the format expected by our context
+      // Ensure all required fields are included in tokenParams
       const tokenParams = {
-        ...values,
+        name: values.name,        // Make sure name is always included
+        symbol: values.symbol,    // Make sure symbol is always included
+        description: values.description || "",
+        amount: values.amount,
         image: logo,
       };
 

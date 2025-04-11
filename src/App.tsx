@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TonConnectProvider } from "./contexts/TonConnectContext";
 import Index from "./pages/Index";
+import CreateToken from "./pages/CreateToken";
 import TokenSuccess from "./pages/TokenSuccess";
 import NotFound from "./pages/NotFound";
 
@@ -20,6 +21,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/create-token" element={<CreateToken />} />
             <Route path="/token-success" element={<TokenSuccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
