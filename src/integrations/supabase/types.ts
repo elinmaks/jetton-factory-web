@@ -326,6 +326,7 @@ export type Database = {
           created_at: string
           first_name: string
           id: number
+          last_name: string | null
           last_seen: string
           total_shares: number
           username: string | null
@@ -335,6 +336,7 @@ export type Database = {
           created_at?: string
           first_name: string
           id: number
+          last_name?: string | null
           last_seen?: string
           total_shares?: number
           username?: string | null
@@ -344,6 +346,7 @@ export type Database = {
           created_at?: string
           first_name?: string
           id?: number
+          last_name?: string | null
           last_seen?: string
           total_shares?: number
           username?: string | null
@@ -390,6 +393,10 @@ export type Database = {
       handle_telegram_auth: {
         Args: { telegram_id: number; first_name: string; last_name?: string }
         Returns: string
+      }
+      is_same_user_id: {
+        Args: { user_id: number }
+        Returns: boolean
       }
       register_telegram_user: {
         Args: {

@@ -33,6 +33,7 @@ export const useTelegramAuth = () => {
         } else {
           setIsAuthenticated(true);
           setUserId(data);
+          console.log('Authentication successful, user ID:', data);
           toast.success('Authenticated with Telegram');
         }
       } catch (error) {
