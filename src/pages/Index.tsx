@@ -77,28 +77,28 @@ const Index = () => {
 
   return (
     <div className="telegram-app bg-ton-background dark:bg-ton-background">
-      <div className="container py-6 px-4 flex flex-col items-center min-h-full">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-ton-blue to-ton-lightBlue bg-clip-text text-transparent">
+      <div className="container py-8 px-6 flex flex-col items-center min-h-full">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-ton-blue to-ton-lightBlue bg-clip-text text-transparent">
             TokenForge
           </h1>
-          <p className="text-gray-300 mt-2">
+          <p className="text-gray-300 mt-3 text-lg">
             The Ultimate TON Token Platform
           </p>
         </div>
 
-        <Tabs defaultValue="featured" className="w-full max-w-4xl mb-8">
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="featured" className="data-[state=active]:bg-ton-blue data-[state=active]:text-white">
-              <Sparkles className="mr-2 h-4 w-4" />
+        <Tabs defaultValue="featured" className="w-full max-w-4xl mb-10">
+          <TabsList className="grid grid-cols-3 mb-6 p-1.5">
+            <TabsTrigger value="featured" className="data-[state=active]:bg-ton-blue data-[state=active]:text-white text-base py-3">
+              <Sparkles className="mr-2 h-5 w-5" />
               Featured
             </TabsTrigger>
-            <TabsTrigger value="market" className="data-[state=active]:bg-ton-blue data-[state=active]:text-white">
-              <LineChart className="mr-2 h-4 w-4" />
+            <TabsTrigger value="market" className="data-[state=active]:bg-ton-blue data-[state=active]:text-white text-base py-3">
+              <LineChart className="mr-2 h-5 w-5" />
               Market
             </TabsTrigger>
-            <TabsTrigger value="nft" className="data-[state=active]:bg-ton-blue data-[state=active]:text-white">
-              <LayoutGrid className="mr-2 h-4 w-4" />
+            <TabsTrigger value="nft" className="data-[state=active]:bg-ton-blue data-[state=active]:text-white text-base py-3">
+              <LayoutGrid className="mr-2 h-5 w-5" />
               NFTs
             </TabsTrigger>
           </TabsList>
@@ -113,8 +113,8 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="market" className="mt-0">
-            <div className="bg-ton-card rounded-lg p-4 shadow-lg border border-ton-blue/20">
-              <h3 className="text-xl font-bold text-white mb-4">
+            <div className="bg-ton-card rounded-lg p-6 shadow-lg border border-ton-blue/20">
+              <h3 className="text-2xl font-bold text-white mb-6">
                 Trending Tokens
               </h3>
               <TokenLeaderboard />
@@ -122,8 +122,8 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="nft" className="mt-0">
-            <div className="bg-ton-card rounded-lg p-4 shadow-lg border border-ton-blue/20">
-              <h3 className="text-xl font-bold text-white mb-4">
+            <div className="bg-ton-card rounded-lg p-6 shadow-lg border border-ton-blue/20">
+              <h3 className="text-2xl font-bold text-white mb-6">
                 Popular Collections
               </h3>
               <NFTCollections />
@@ -131,20 +131,20 @@ const Index = () => {
           </TabsContent>
         </Tabs>
 
-        <footer className="mt-8 text-center text-gray-400 text-sm">
+        <footer className="mt-10 text-center text-gray-400 text-base">
           {isInTelegram ? (
-            <TelegramAuth />
+            <TelegramAuth className="mx-auto" />
           ) : (
             <p>
               {!connected ? (
                 <Button 
                   variant="link" 
-                  className="text-ton-blue" 
+                  className="text-ton-blue text-lg" 
                   onClick={connectWallet}
                 >
                   {connecting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Connecting...
                     </>
                   ) : (
@@ -163,23 +163,23 @@ const Index = () => {
         <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
           <DialogContent className="bg-ton-card text-white">
             <DialogHeader>
-              <DialogTitle>Buy ZAZA Token</DialogTitle>
+              <DialogTitle className="text-xl">Buy ZAZA Token</DialogTitle>
               <DialogDescription className="text-gray-400">
                 Enter the amount of tokens you want to buy
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex items-center gap-2">
+            <div className="space-y-5 py-4">
+              <div className="flex items-center gap-3">
                 <Input
                   type="number"
                   placeholder="Amount"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="bg-ton-background border-ton-blue/20"
+                  className="bg-ton-background border-ton-blue/20 h-12 text-lg"
                 />
-                <span className="font-mono text-gray-300">ZAZA</span>
+                <span className="font-mono text-lg text-gray-300">ZAZA</span>
               </div>
-              <div className="text-sm text-gray-400">
+              <div className="text-base text-gray-400">
                 Price: {amount ? (Number(amount) * 0.0021).toFixed(4) : '0.0000'} TON
               </div>
               <Button 
@@ -196,23 +196,23 @@ const Index = () => {
         <Dialog open={sellDialogOpen} onOpenChange={setSellDialogOpen}>
           <DialogContent className="bg-ton-card text-white">
             <DialogHeader>
-              <DialogTitle>Sell ZAZA Token</DialogTitle>
+              <DialogTitle className="text-xl">Sell ZAZA Token</DialogTitle>
               <DialogDescription className="text-gray-400">
                 Enter the amount of tokens you want to sell
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex items-center gap-2">
+            <div className="space-y-5 py-4">
+              <div className="flex items-center gap-3">
                 <Input
                   type="number"
                   placeholder="Amount"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="bg-ton-background border-ton-blue/20"
+                  className="bg-ton-background border-ton-blue/20 h-12 text-lg"
                 />
-                <span className="font-mono text-gray-300">ZAZA</span>
+                <span className="font-mono text-lg text-gray-300">ZAZA</span>
               </div>
-              <div className="text-sm text-gray-400">
+              <div className="text-base text-gray-400">
                 Value: {amount ? (Number(amount) * 0.0021).toFixed(4) : '0.0000'} TON
               </div>
               <Button 
