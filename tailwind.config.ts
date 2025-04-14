@@ -67,8 +67,8 @@ export default {
 					blue: '#0098EA',
 					darkBlue: '#0072C0',
 					lightBlue: '#26B2FF',
-					background: '#101010',
-					card: '#1A1A1A',
+					background: '#000000',
+					card: '#0A0A0A',
 					success: '#44D954',
 					error: '#EF4444',
 				}
@@ -103,12 +103,19 @@ export default {
 					'0%': { transform: 'rotate(0deg)' },
 					'100%': { transform: 'rotate(360deg)' },
 				},
+				'bounce': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'25%': { transform: 'translateY(-20%)' },
+					'50%': { transform: 'translateY(5%)' },
+					'75%': { transform: 'translateY(-10%)' },
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
 				'spin-slow': 'spin-slow 3s linear infinite',
+				'bounce': 'bounce 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
 			}
 		}
 	},

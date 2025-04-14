@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TonConnectProvider } from "./contexts/TonConnectContext";
 import { TelegramProvider } from "./contexts/TelegramContext";
 import Index from "./pages/Index";
+import Earnings from "./pages/Earnings";
+import Memepad from "./pages/Memepad";
 import CreateToken from "./pages/CreateToken";
 import TokenSuccess from "./pages/TokenSuccess";
 import NotFound from "./pages/NotFound";
@@ -24,6 +26,8 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/earnings" element={<Earnings />} />
+              <Route path="/memepad" element={<Memepad />} />
               <Route path="/create-token" element={<CreateToken />} />
               <Route path="/token-success" element={<TokenSuccess />} />
               <Route path="*" element={<NotFound />} />
