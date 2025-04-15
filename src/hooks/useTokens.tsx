@@ -3,11 +3,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Update the Token interface to match the database schema
 export interface Token {
   id: string;
   name: string;
   symbol: string;
-  description: string;
+  description?: string;
   supply: string;
   creator_address: string;
   status: 'draft' | 'mining' | 'deploying' | 'completed';
@@ -16,12 +17,12 @@ export interface Token {
   mining_difficulty: number;
   target_blocks: number;
   created_at: string;
-  price?: number;
-  market_cap?: number;
+  price?: number | null;
+  market_cap?: number | null;
 }
 
 interface UseTokensProps {
-  status?: string;
+  status?: Token['status'];
   limit?: number;
 }
 

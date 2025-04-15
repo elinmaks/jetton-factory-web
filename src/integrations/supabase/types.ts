@@ -288,6 +288,57 @@ export type Database = {
         }
         Relationships: []
       }
+      tokens: {
+        Row: {
+          contract_address: string | null
+          created_at: string
+          creator_address: string
+          deployment_tx: string | null
+          description: string | null
+          id: string
+          market_cap: number | null
+          mining_difficulty: number
+          name: string
+          price: number | null
+          status: string
+          supply: string
+          symbol: string
+          target_blocks: number
+        }
+        Insert: {
+          contract_address?: string | null
+          created_at?: string
+          creator_address: string
+          deployment_tx?: string | null
+          description?: string | null
+          id?: string
+          market_cap?: number | null
+          mining_difficulty?: number
+          name: string
+          price?: number | null
+          status?: string
+          supply: string
+          symbol: string
+          target_blocks?: number
+        }
+        Update: {
+          contract_address?: string | null
+          created_at?: string
+          creator_address?: string
+          deployment_tx?: string | null
+          description?: string | null
+          id?: string
+          market_cap?: number | null
+          mining_difficulty?: number
+          name?: string
+          price?: number | null
+          status?: string
+          supply?: string
+          symbol?: string
+          target_blocks?: number
+        }
+        Relationships: []
+      }
       user_stats: {
         Row: {
           last_active_at: string

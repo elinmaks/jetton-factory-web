@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,33 +22,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTelegram } from '@/contexts/TelegramContext';
 import { telegramBackButton } from '@/utils/telegram';
 import MiningProgress from '@/components/MiningProgress';
-
-interface TokenData {
-  id: string;
-  name: string;
-  symbol: string;
-  description: string;
-  supply: string;
-  creator_address: string;
-  status: 'draft' | 'mining' | 'deploying' | 'completed';
-  contract_address?: string;
-  deployment_tx?: string;
-  mining_difficulty: number;
-  target_blocks: number;
-  created_at: string;
-  price?: number;
-  market_cap?: number;
-}
+import { Token } from '@/hooks/useTokens';
 
 const TokenDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isInTelegram } = useTelegram();
-  const [token, setToken] = useState<TokenData | null>(null);
+  const [token, setToken] = useState<Token | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('trade');
   
-  // Setup Telegram Back Button
   useEffect(() => {
     if (isInTelegram) {
       telegramBackButton.show();
@@ -65,7 +47,6 @@ const TokenDetails = () => {
     };
   }, [isInTelegram, navigate]);
   
-  // Fetch token data
   useEffect(() => {
     const fetchToken = async () => {
       if (!id) return;
@@ -80,7 +61,7 @@ const TokenDetails = () => {
         
         if (error) throw error;
         if (data) {
-          setToken(data);
+          setToken(data as Token);
         }
       } catch (error) {
         console.error('Error fetching token:', error);
@@ -92,7 +73,6 @@ const TokenDetails = () => {
     
     fetchToken();
     
-    // Set up real-time subscription
     const subscription = supabase
       .channel('token-changes')
       .on('postgres_changes', {
@@ -101,7 +81,7 @@ const TokenDetails = () => {
         table: 'tokens',
         filter: `id=eq.${id}`
       }, (payload) => {
-        setToken(payload.new as TokenData);
+        setToken(payload.new as Token);
       })
       .subscribe();
     
@@ -110,7 +90,6 @@ const TokenDetails = () => {
     };
   }, [id]);
   
-  // Handle mining completion
   const handleMiningComplete = async () => {
     if (!token) return;
     
@@ -131,13 +110,11 @@ const TokenDetails = () => {
     }
   };
   
-  // Copy to clipboard
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
   };
   
-  // Render loading state
   if (isLoading) {
     return (
       <div className="telegram-app bg-ton-background">
@@ -156,7 +133,6 @@ const TokenDetails = () => {
     );
   }
   
-  // Render not found state
   if (!token) {
     return (
       <div className="telegram-app bg-ton-background">

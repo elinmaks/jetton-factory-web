@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -17,6 +16,7 @@ import { useTonConnect } from '@/contexts/TonConnectContext';
 import { useTelegram } from '@/contexts/TelegramContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Token } from '@/hooks/useTokens';
 
 type TokenData = {
   name: string;
