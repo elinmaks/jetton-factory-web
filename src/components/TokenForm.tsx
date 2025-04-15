@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 
 import { Button } from '@/components/ui/button';
@@ -34,9 +33,12 @@ const formSchema = z.object({
   }, "Must be a positive number"),
 });
 
-const TokenForm = () => {
-  const navigate = useNavigate();
-  const { connected, deployToken } = useTonConnect();
+interface TokenFormProps {
+  onSubmit: (values: z.infer<typeof formSchema> & { logoUrl?: string }) => void;
+}
+
+const TokenForm = ({ onSubmit }: TokenFormProps) => {
+  const { connected } = useTonConnect();
   const { isInTelegram } = useTelegram();
   const { isAuthenticated: isTelegramAuthenticated } = useTelegramAuth();
   const [logo, setLogo] = useState<File | null>(null);
@@ -52,7 +54,7 @@ const TokenForm = () => {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!connected && !isInTelegram) {
       toast.error("Please connect your wallet first");
       return;
@@ -69,44 +71,22 @@ const TokenForm = () => {
     }
 
     try {
-      // Ensure all required fields are included in tokenParams
-      const tokenParams = {
-        name: values.name,
-        symbol: values.symbol,
-        description: values.description || "",
-        amount: values.amount,
-        image: logo,
-      };
-
-      // Call deploy function from context
-      // For Telegram users, we would handle this differently
-      const result = isInTelegram 
-        ? { success: true, jettonAddress: "telegram-mock-address" } 
-        : await deployToken(tokenParams);
-
-      if (result.success && result.jettonAddress) {
-        if (isInTelegram) {
-          hapticFeedback.notification('success');
-        }
-        
-        // Navigate to success page with the result
-        navigate("/token-success", { 
-          state: { 
-            token: {
-              ...values, 
-              logoUrl: logo ? URL.createObjectURL(logo) : null
-            },
-            deploymentResult: result 
-          } 
-        });
-      } else {
-        if (isInTelegram) {
-          hapticFeedback.notification('error');
-        }
-        toast.error(result.error || "Failed to deploy token");
+      let logoUrl: string | undefined = undefined;
+      
+      if (logo) {
+        // Here you could upload the logo to storage
+        // and get back a URL, for now we'll just create a blob URL
+        logoUrl = URL.createObjectURL(logo);
       }
+      
+      // Call the onSubmit callback with the form values and logo URL
+      onSubmit({ 
+        ...values, 
+        logoUrl 
+      });
+      
     } catch (error) {
-      console.error("Error during token deployment:", error);
+      console.error("Error during form submission:", error);
       if (isInTelegram) {
         hapticFeedback.notification('error');
       }
@@ -118,7 +98,7 @@ const TokenForm = () => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="flex flex-col items-center mb-6">
           <TokenLogo 
             logo={logo} 
@@ -195,7 +175,7 @@ const TokenForm = () => {
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating Token...
+              Processing...
             </>
           ) : (
             "Create Token"

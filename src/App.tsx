@@ -11,6 +11,7 @@ import Earnings from "./pages/Earnings";
 import Memepad from "./pages/Memepad";
 import CreateToken from "./pages/CreateToken";
 import TokenSuccess from "./pages/TokenSuccess";
+import TokenDetails from "./pages/TokenDetails";
 import NotFound from "./pages/NotFound";
 
 // Create a client
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/memepad" element={<Memepad />} />
               <Route path="/create-token" element={<CreateToken />} />
               <Route path="/token-success" element={<TokenSuccess />} />
+              <Route path="/token/:id" element={<TokenDetails />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
