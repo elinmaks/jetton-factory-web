@@ -1,27 +1,45 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTelegram } from '@/contexts/TelegramContext';
-import { telegramMainButton } from '@/utils/telegram';
+import { telegramMainButton, hapticFeedback } from '@/utils/telegram';
+import { useNavigate } from 'react-router-dom';
 import HomeHeader from '@/components/HomeHeader';
 import BalanceCard from '@/components/BalanceCard';
 import ActionButtons from '@/components/ActionButtons';
 import Leaderboard from '@/components/Leaderboard';
 import BottomNavigation from '@/components/BottomNavigation';
-import ActiveMining from '@/components/ActiveMining';
 import { useTokens } from '@/hooks/useTokens';
+import { useTonConnect } from '@/contexts/TonConnectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, TrendingUp } from 'lucide-react';
+import { Trophy, TrendingUp, Pickaxe } from 'lucide-react';
+import MiningView from '@/components/MiningView';
 
 const Index = () => {
-  const { isInTelegram } = useTelegram();
-  const { tokens, loading } = useTokens({ status: 'completed', limit: 5 });
+  const navigate = useNavigate();
+  const { isInTelegram, isInitialized } = useTelegram();
+  const { wallet, connected } = useTonConnect();
+  const { tokens: trendingTokens, loading: trendingLoading } = useTokens({ 
+    status: 'completed', 
+    limit: 5 
+  });
+  const { tokens: miningTokens, loading: miningLoading } = useTokens({ 
+    status: 'mining',
+    creator_address: wallet?.address || '',
+    enabled: connected && !!wallet?.address
+  });
 
-  // Setup Telegram Main Button
+  // Set up Telegram MainButton
   useEffect(() => {
-    if (isInTelegram) {
+    if (isInTelegram && isInitialized) {
+      // Configure main button for token creation
       telegramMainButton.setText('Create Token');
+      telegramMainButton.setParams({
+        color: '#0098EA',
+        text_color: '#FFFFFF'
+      });
       telegramMainButton.onClick(() => {
-        window.location.href = '/create-token';
+        hapticFeedback.impact('medium');
+        navigate('/create-token');
       });
       telegramMainButton.show();
     }
@@ -31,10 +49,10 @@ const Index = () => {
         telegramMainButton.hide();
       }
     };
-  }, [isInTelegram]);
+  }, [isInTelegram, isInitialized, navigate]);
 
   // Find trending token (most recently completed)
-  const trendingToken = tokens && tokens.length > 0 ? tokens[0] : null;
+  const trendingToken = trendingTokens && trendingTokens.length > 0 ? trendingTokens[0] : null;
 
   return (
     <div className="telegram-app bg-background dark:bg-background">
@@ -45,10 +63,21 @@ const Index = () => {
           <BalanceCard />
           
           {/* Display Active Mining Tokens */}
-          <ActiveMining />
+          {!miningLoading && miningTokens && miningTokens.length > 0 && (
+            <div className="mt-6">
+              {miningTokens.map(token => (
+                <MiningView 
+                  key={token.id}
+                  tokenId={token.id}
+                  tokenName={token.name}
+                  tokenSymbol={token.symbol}
+                />
+              ))}
+            </div>
+          )}
           
           {/* Display trending token if available */}
-          {trendingToken && (
+          {!trendingLoading && trendingToken && (
             <Card className="bg-ton-card border-none shadow-lg mt-6 overflow-hidden">
               <CardHeader className="pb-2">
                 <CardTitle className="text-white flex items-center">
@@ -87,6 +116,11 @@ const Index = () => {
                 <a 
                   href={`/token/${trendingToken.id}`} 
                   className="block mt-4 text-center text-sm text-ton-blue"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    hapticFeedback.impact('light');
+                    navigate(`/token/${trendingToken.id}`);
+                  }}
                 >
                   View Details
                 </a>

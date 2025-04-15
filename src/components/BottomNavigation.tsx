@@ -3,9 +3,12 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, TrendingUp, Rocket, Users, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { hapticFeedback } from '@/utils/telegram';
+import { useTelegram } from '@/contexts/TelegramContext';
 
 const BottomNavigation = () => {
   const location = useLocation();
+  const { isInTelegram } = useTelegram();
   
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
@@ -14,6 +17,13 @@ const BottomNavigation = () => {
     { path: '/friends', icon: Users, label: 'Friends' },
     { path: '/wallet', icon: Wallet, label: 'Wallet' }
   ];
+  
+  const handleNavClick = () => {
+    if (isInTelegram) {
+      hapticFeedback.impact('light');
+      hapticFeedback.selectionChanged();
+    }
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-gray-800 py-2 px-2 sm:w-[600px] sm:mx-auto">
@@ -30,6 +40,7 @@ const BottomNavigation = () => {
                 "flex flex-col items-center justify-center w-16 py-2 rounded-lg",
                 isActive ? "text-ton-blue" : "text-gray-400 hover:text-gray-300"
               )}
+              onClick={handleNavClick}
             >
               <Icon size={24} className={isActive ? "animate-pulse-slow" : ""} />
               <span className="text-xs mt-1">{item.label}</span>

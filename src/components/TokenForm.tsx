@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -21,7 +22,7 @@ import TokenLogo from './TokenLogo';
 import { useTonConnect } from '@/contexts/TonConnectContext';
 import { useTelegram } from '@/contexts/TelegramContext';
 import useTelegramAuth from '@/hooks/useTelegramAuth';
-import { hapticFeedback } from '@/utils/telegram';
+import { hapticFeedback, telegramMainButton, showConfirm } from '@/utils/telegram';
 
 const formSchema = z.object({
   name: z.string().min(1, "Token name is required").max(30, "Maximum 30 characters"),
@@ -37,9 +38,10 @@ interface TokenFormProps {
   onSubmit: (values: z.infer<typeof formSchema> & { logoUrl?: string }) => void;
 }
 
-const TokenForm = ({ onSubmit }: TokenFormProps) => {
+const TokenForm: React.FC<TokenFormProps> = ({ onSubmit }) => {
+  const navigate = useNavigate();
   const { connected } = useTonConnect();
-  const { isInTelegram } = useTelegram();
+  const { isInTelegram, isInitialized } = useTelegram();
   const { isAuthenticated: isTelegramAuthenticated } = useTelegramAuth();
   const [logo, setLogo] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,6 +56,67 @@ const TokenForm = ({ onSubmit }: TokenFormProps) => {
     },
   });
 
+  // Integration with Telegram MainButton
+  useEffect(() => {
+    if (isInTelegram && isInitialized) {
+      // Set main button text and appearance
+      telegramMainButton.setText(isSubmitting ? 'Processing...' : 'Create Token');
+      telegramMainButton.setParams({
+        is_active: form.formState.isValid && (connected || isTelegramAuthenticated) && !isSubmitting,
+        color: '#0098EA'
+      });
+      
+      if (isSubmitting) {
+        telegramMainButton.showProgress(true);
+        telegramMainButton.disable();
+      } else {
+        telegramMainButton.hideProgress();
+        if (form.formState.isValid && (connected || isTelegramAuthenticated)) {
+          telegramMainButton.enable();
+        } else {
+          telegramMainButton.disable();
+        }
+      }
+      
+      // Set click handler
+      telegramMainButton.onClick(() => handleTelegramSubmit());
+      telegramMainButton.show();
+    }
+    
+    return () => {
+      if (isInTelegram) {
+        telegramMainButton.hide();
+        telegramMainButton.offClick(() => handleTelegramSubmit());
+      }
+    };
+  }, [
+    isInTelegram, 
+    isInitialized, 
+    form.formState.isValid, 
+    connected, 
+    isTelegramAuthenticated,
+    isSubmitting
+  ]);
+
+  // Listen for form value changes to update button state
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      if (isInTelegram && (connected || isTelegramAuthenticated)) {
+        if (form.formState.isValid) {
+          telegramMainButton.enable();
+        } else {
+          telegramMainButton.disable();
+        }
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form, isInTelegram, connected, isTelegramAuthenticated]);
+
+  const handleTelegramSubmit = async () => {
+    await form.handleSubmit(handleSubmit)();
+  };
+
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!connected && !isInTelegram) {
       toast.error("Please connect your wallet first");
@@ -64,10 +127,16 @@ const TokenForm = ({ onSubmit }: TokenFormProps) => {
       toast.error("Telegram authentication required");
       return;
     }
+    
+    // Confirm with user before proceeding
+    const confirmed = await showConfirm(`Create token "${values.name}" (${values.symbol}) with supply of ${Number(values.amount).toLocaleString()}?`);
+    if (!confirmed) return;
 
     setIsSubmitting(true);
     if (isInTelegram) {
       hapticFeedback.impact('medium');
+      telegramMainButton.showProgress(true);
+      telegramMainButton.disable();
     }
 
     try {
@@ -80,10 +149,14 @@ const TokenForm = ({ onSubmit }: TokenFormProps) => {
       }
       
       // Call the onSubmit callback with the form values and logo URL
-      onSubmit({ 
+      await onSubmit({ 
         ...values, 
         logoUrl 
       });
+      
+      if (isInTelegram) {
+        hapticFeedback.notification('success');
+      }
       
     } catch (error) {
       console.error("Error during form submission:", error);
@@ -93,6 +166,10 @@ const TokenForm = ({ onSubmit }: TokenFormProps) => {
       toast.error("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
+      if (isInTelegram) {
+        telegramMainButton.hideProgress();
+        telegramMainButton.enable();
+      }
     }
   };
 
@@ -114,7 +191,14 @@ const TokenForm = ({ onSubmit }: TokenFormProps) => {
             <FormItem>
               <FormLabel>Token Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. My Awesome Token" {...field} />
+                <Input 
+                  placeholder="e.g. My Awesome Token" 
+                  {...field} 
+                  onChange={(e) => {
+                    field.onChange(e);
+                    if (isInTelegram) hapticFeedback.selectionChanged();
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -128,7 +212,14 @@ const TokenForm = ({ onSubmit }: TokenFormProps) => {
             <FormItem>
               <FormLabel>Token Symbol</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. MAT" {...field} />
+                <Input 
+                  placeholder="e.g. MAT" 
+                  {...field} 
+                  onChange={(e) => {
+                    field.onChange(e);
+                    if (isInTelegram) hapticFeedback.selectionChanged();
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -142,7 +233,16 @@ const TokenForm = ({ onSubmit }: TokenFormProps) => {
             <FormItem>
               <FormLabel>Total Supply</FormLabel>
               <FormControl>
-                <Input type="number" min="1" step="1" {...field} />
+                <Input 
+                  type="number" 
+                  min="1" 
+                  step="1" 
+                  {...field} 
+                  onChange={(e) => {
+                    field.onChange(e);
+                    if (isInTelegram) hapticFeedback.selectionChanged();
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -160,6 +260,10 @@ const TokenForm = ({ onSubmit }: TokenFormProps) => {
                   placeholder="Describe your token..."
                   className="resize-none" 
                   {...field} 
+                  onChange={(e) => {
+                    field.onChange(e);
+                    if (isInTelegram) hapticFeedback.selectionChanged();
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -167,20 +271,22 @@ const TokenForm = ({ onSubmit }: TokenFormProps) => {
           )}
         />
 
-        <Button 
-          type="submit" 
-          className="w-full token-gradient" 
-          disabled={isSubmitting || (!connected && !isTelegramAuthenticated)}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            "Create Token"
-          )}
-        </Button>
+        {!isInTelegram && (
+          <Button 
+            type="submit" 
+            className="w-full token-gradient" 
+            disabled={isSubmitting || (!connected && !isTelegramAuthenticated)}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Create Token"
+            )}
+          </Button>
+        )}
       </form>
     </Form>
   );

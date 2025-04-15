@@ -1,165 +1,121 @@
 
-// Mining worker implementing SHA-256 for Proof of Work
-// Based on the hashcash algorithm
+// Web Worker for mining tokens
+import { sha256 } from 'js-sha256';
 
-self.onmessage = (e: MessageEvent) => {
-  const { blockData, difficulty, targetPrefix, nonce } = e.data;
+// Mining state
+let running = false;
+let hashesComputed = 0;
+let startTime = Date.now();
+let lastReportTime = Date.now();
+let targetPrefix = '';
+let blockData = '';
+
+// Function to mine a block with a given difficulty
+const mineBlock = (blockData: string, targetPrefix: string) => {
+  let nonce = 0;
+  let hash = '';
   
-  if (e.data.type === 'stop') {
-    self.postMessage({ type: 'stopped' });
-    return;
-  }
+  // Start mining
+  running = true;
+  startTime = Date.now();
+  lastReportTime = Date.now();
+  hashesComputed = 0;
   
-  let currentNonce = nonce || 0;
-  const startTime = performance.now();
-  let hashesComputed = 0;
-  const hashesPerUpdate = 1000; // Report hashrate every 1000 hashes
-  
-  // Mining loop
-  while (true) {
-    // Check if we should stop or pause every few iterations
-    if (hashesComputed % 1000 === 0) {
-      // Small delay to allow for UI updates and prevent freezing
-      setTimeout(() => {
-        mine();
-      }, 0);
-      return;
-    }
+  // Report progress function
+  const reportProgress = () => {
+    const currentTime = Date.now();
+    const timeElapsed = (currentTime - startTime) / 1000; // in seconds
+    const timeSinceLastReport = (currentTime - lastReportTime) / 1000; // in seconds
     
-    const result = computeHash(blockData, currentNonce);
-    hashesComputed++;
+    // Calculate hash rate
+    const hashRate = hashesComputed / timeElapsed;
     
-    // Check if we found a valid hash
-    if (result.hash.startsWith(targetPrefix)) {
-      // Success! Send the result back
-      self.postMessage({
-        type: 'success',
-        hash: result.hash,
-        nonce: currentNonce,
-        hashesComputed,
-        timeElapsed: performance.now() - startTime
-      });
-      return;
-    }
-    
-    // Report progress regularly
-    if (hashesComputed % hashesPerUpdate === 0) {
-      const timeElapsed = performance.now() - startTime;
-      const hashRate = hashesComputed / (timeElapsed / 1000);
-      
-      self.postMessage({
-        type: 'progress',
-        hashesComputed,
-        timeElapsed,
-        hashRate,
-        currentNonce
-      });
-    }
-    
-    currentNonce++;
-  }
-  
-  function mine() {
-    let localHashesComputed = 0;
-    const localStartTime = performance.now();
-    
-    while (localHashesComputed < hashesPerUpdate) {
-      const result = computeHash(blockData, currentNonce);
-      localHashesComputed++;
-      
-      // Check if we found a valid hash
-      if (result.hash.startsWith(targetPrefix)) {
-        // Success!
-        self.postMessage({
-          type: 'success',
-          hash: result.hash,
-          nonce: currentNonce,
-          hashesComputed: hashesComputed + localHashesComputed,
-          timeElapsed: performance.now() - startTime
-        });
-        return;
-      }
-      
-      currentNonce++;
-    }
-    
-    // Update total hashes
-    hashesComputed += localHashesComputed;
-    
-    // Report progress
-    const totalTimeElapsed = performance.now() - startTime;
-    const hashRate = hashesComputed / (totalTimeElapsed / 1000);
-    
+    // Send progress update to main thread
     self.postMessage({
       type: 'progress',
-      hashesComputed,
-      timeElapsed: totalTimeElapsed,
       hashRate,
-      currentNonce
+      hashesComputed,
+      timeElapsed,
+      nonce
     });
     
-    // Continue mining
-    setTimeout(() => {
-      mine();
-    }, 0);
+    lastReportTime = currentTime;
+  };
+  
+  // Set up progress reporting interval
+  const progressInterval = setInterval(() => {
+    if (running) {
+      reportProgress();
+    } else {
+      clearInterval(progressInterval);
+    }
+  }, 1000);
+  
+  // Mining loop
+  while (running) {
+    // Prepare data with nonce
+    const dataWithNonce = `${blockData}|${nonce}`;
+    
+    // Compute hash
+    hash = sha256(dataWithNonce);
+    hashesComputed++;
+    
+    // Check if hash matches target prefix
+    if (hash.startsWith(targetPrefix)) {
+      // Found a valid hash!
+      running = false;
+      clearInterval(progressInterval);
+      
+      // Report final stats
+      const timeElapsed = (Date.now() - startTime) / 1000; // in seconds
+      
+      // Send success message to main thread
+      self.postMessage({
+        type: 'success',
+        hash,
+        nonce,
+        timeElapsed,
+        hashesComputed,
+        blockData: dataWithNonce
+      });
+      
+      // Exit mining loop
+      break;
+    }
+    
+    // Try next nonce
+    nonce++;
+    
+    // Every 10,000 hashes, check if we should continue and report progress
+    if (hashesComputed % 10000 === 0) {
+      // Yield to allow messages to be processed
+      // This is a trick to allow the worker to process messages
+      setTimeout(() => {}, 0);
+    }
+  }
+  
+  // If mining was stopped before finding a valid hash
+  if (!running) {
+    clearInterval(progressInterval);
+    reportProgress();
   }
 };
 
-// SHA-256 hash computation
-function computeHash(data: string, nonce: number): { hash: string, nonce: number } {
-  const input = `${data}${nonce}`;
-  const hashBuffer = sha256(input);
-  const hashHex = bufferToHex(hashBuffer);
+// Message handler
+self.onmessage = (e) => {
+  const data = e.data;
   
-  return {
-    hash: hashHex,
-    nonce
-  };
-}
-
-// Simple SHA-256 implementation
-function sha256(data: string): ArrayBuffer {
-  // Convert string to UTF-8 encoded array
-  const encoder = new TextEncoder();
-  const dataBuffer = encoder.encode(data);
-  
-  // Create a hash and return the buffer
-  const hashBuffer = crypto.subtle.digestSync('SHA-256', dataBuffer);
-  return hashBuffer;
-}
-
-// Convert buffer to hex string
-function bufferToHex(buffer: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-// Polyfill for crypto.subtle.digestSync which doesn't exist
-// This is a synchronous version for the worker
-const crypto = {
-  subtle: {
-    digestSync: (algorithm: string, data: Uint8Array): ArrayBuffer => {
-      // In a real implementation, we would use the actual Web Crypto API
-      // But for now, we'll use a placeholder that would be replaced with a proper synchronous hash function
-      // in a production environment, you'd use a proper crypto library
-      
-      // For now, we're creating a mock hash based on the input data
-      // This is NOT secure and only for demonstration
-      let hash = new Uint8Array(32); // 32 bytes = 256 bits
-      
-      // Generate a deterministic hash based on the data
-      let sum = 0;
-      for (let i = 0; i < data.length; i++) {
-        sum = (sum + data[i]) % 256;
-      }
-      
-      // Fill the hash with a pattern based on the data
-      for (let i = 0; i < 32; i++) {
-        hash[i] = (sum + i * data.length) % 256;
-      }
-      
-      return hash.buffer;
-    }
+  if (data.type === 'stop') {
+    // Stop mining
+    running = false;
+  } else {
+    // Start mining with provided parameters
+    blockData = data.blockData || '';
+    targetPrefix = data.targetPrefix || '0000';
+    
+    // Start mining
+    mineBlock(blockData, targetPrefix);
   }
-}
+};
+
+export {};

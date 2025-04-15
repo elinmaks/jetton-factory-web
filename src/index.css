@@ -34,6 +34,19 @@
     --ring: 240 4.9% 83.9%;
 
     --radius: 1rem;
+    
+    /* Telegram theme variables */
+    --tg-bg-color: #000000;
+    --tg-text-color: #ffffff;
+    --tg-hint-color: #7d7d7d;
+    --tg-link-color: #0098ea;
+    --tg-button-color: #0098ea;
+    --tg-button-text-color: #ffffff;
+    --tg-secondary-bg-color: #181818;
+    
+    /* Viewport variables */
+    --tg-viewport-height: 100vh;
+    --tg-viewport-stable-height: 100vh;
   }
 
   .dark {
@@ -74,10 +87,23 @@
 
   body {
     @apply bg-background text-foreground;
+    background-color: var(--tg-bg-color, #000000);
+    color: var(--tg-text-color, #ffffff);
     background-image: 
       linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 20px 20px;
+    height: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Fixed safe area for fullscreen Telegram Web App */
+  #root {
+    height: var(--tg-viewport-stable-height, 100vh);
+    max-height: var(--tg-viewport-height, 100vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
   }
 }
 
@@ -117,8 +143,9 @@
 .telegram-app {
   max-width: 100%;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: var(--tg-viewport-stable-height, 100vh);
   padding-bottom: 70px; /* Space for bottom navigation */
+  overflow-x: hidden;
 }
 
 @media (min-width: 640px) {
@@ -166,4 +193,65 @@
   0% { transform: scale(1); }
   50% { transform: scale(1.1); }
   100% { transform: scale(1); }
+}
+
+/* Telegram-specific styles */
+.tg-button {
+  background-color: var(--tg-button-color, #0098EA);
+  color: var(--tg-button-text-color, #ffffff);
+}
+
+.tg-card {
+  background-color: var(--tg-secondary-bg-color, #181818);
+}
+
+.tg-link {
+  color: var(--tg-link-color, #0098EA);
+}
+
+.tg-hint {
+  color: var(--tg-hint-color, #7d7d7d);
+}
+
+/* Animation for page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-exit {
+  opacity: 1;
+}
+
+.page-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+/* Animation for haptic feedback */
+@keyframes haptic-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+.haptic-feedback {
+  animation: haptic-pulse 0.2s ease-in-out;
+}
+
+/* Animation for the slow pulse used in navigation */
+@keyframes pulse-slow {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s infinite;
 }

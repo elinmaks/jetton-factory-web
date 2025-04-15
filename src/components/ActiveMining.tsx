@@ -1,18 +1,21 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Clock, Pickaxe } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useTonConnect } from '@/contexts/TonConnectContext';
+import { hapticFeedback } from '@/utils/telegram';
 import { Token } from '@/hooks/useTokens';
 
-const ActiveMining = () => {
+const ActiveMining: React.FC = () => {
+  const navigate = useNavigate();
   const { wallet } = useTonConnect();
   const [miningTokens, setMiningTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
+  const [miningProgress, setMiningProgress] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchMiningTokens = async () => {
@@ -31,10 +34,38 @@ const ActiveMining = () => {
         if (error) throw error;
         
         setMiningTokens(data as Token[]);
+        
+        // Fetch mining progress for each token
+        for (const token of data as Token[]) {
+          fetchMiningProgress(token.id);
+        }
       } catch (err) {
         console.error('Error fetching mining tokens:', err);
       } finally {
         setLoading(false);
+      }
+    };
+    
+    const fetchMiningProgress = async (tokenId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('mining_shares')
+          .select('*')
+          .eq('token_id', tokenId)
+          .eq('is_valid', true);
+        
+        if (error) throw error;
+        
+        const blocksFound = data.length;
+        const totalBlocks = 1000; // Required blocks to complete mining
+        const progress = Math.min(Math.floor((blocksFound / totalBlocks) * 100), 100);
+        
+        setMiningProgress(prev => ({
+          ...prev,
+          [tokenId]: progress
+        }));
+      } catch (err) {
+        console.error('Error fetching mining progress:', err);
       }
     };
     
@@ -54,11 +85,32 @@ const ActiveMining = () => {
         })
         .subscribe();
       
+      // Set up real-time subscription for mining shares
+      const sharesSubscription = supabase
+        .channel('mining-shares-changes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'mining_shares'
+        }, (payload) => {
+          const tokenId = payload.new?.token_id;
+          if (tokenId) {
+            fetchMiningProgress(tokenId);
+          }
+        })
+        .subscribe();
+      
       return () => {
         supabase.removeChannel(subscription);
+        supabase.removeChannel(sharesSubscription);
       };
     }
   }, [wallet?.address]);
+
+  const handleTokenClick = (tokenId: string) => {
+    hapticFeedback.impact('light');
+    navigate(`/token/${tokenId}`);
+  };
 
   if (loading) {
     return null;
@@ -95,17 +147,24 @@ const ActiveMining = () => {
               <div className="mb-3">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-400">Mining Progress</span>
-                  <span className="text-ton-blue">0/1 blocks</span>
+                  <span className="text-ton-blue">
+                    {miningProgress[token.id] || 0}%
+                  </span>
                 </div>
-                <Progress value={0} className="h-2 bg-gray-800" />
+                <Progress 
+                  value={miningProgress[token.id] || 0} 
+                  className="h-2 bg-gray-800" 
+                />
               </div>
               
-              <Link to={`/token/${token.id}`}>
-                <Button size="sm" className="w-full bg-ton-blue/20 hover:bg-ton-blue/30 text-ton-blue">
-                  Continue Mining
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
+              <Button 
+                size="sm" 
+                className="w-full bg-ton-blue/20 hover:bg-ton-blue/30 text-ton-blue"
+                onClick={() => handleTokenClick(token.id)}
+              >
+                Continue Mining
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           ))}
         </div>
