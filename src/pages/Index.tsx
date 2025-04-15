@@ -7,6 +7,7 @@ import BalanceCard from '@/components/BalanceCard';
 import ActionButtons from '@/components/ActionButtons';
 import Leaderboard from '@/components/Leaderboard';
 import BottomNavigation from '@/components/BottomNavigation';
+import ActiveMining from '@/components/ActiveMining';
 import { useTokens } from '@/hooks/useTokens';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, TrendingUp } from 'lucide-react';
@@ -42,6 +43,9 @@ const Index = () => {
         
         <div className="py-4 px-4">
           <BalanceCard />
+          
+          {/* Display Active Mining Tokens */}
+          <ActiveMining />
           
           {/* Display trending token if available */}
           {trendingToken && (

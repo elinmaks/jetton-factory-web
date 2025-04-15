@@ -29,6 +29,8 @@ declare global {
         openLink: (url: string) => void;
         onEvent: (eventType: string, eventHandler: Function) => void;
         offEvent: (eventType: string, eventHandler: Function) => void;
+        requestFullscreen: () => void;
+        setHeaderColor: (color: "bg_color" | "secondary_bg_color" | string) => void;
         BackButton: {
           isVisible: boolean;
           show: () => void;
@@ -96,7 +98,26 @@ export const initTelegramWebApp = () => {
   // Tell Telegram WebApp we're ready
   window.Telegram.WebApp.ready();
   
-  // Expand the WebApp to take the whole screen
+  // Request fullscreen mode (Bot API 8.0+)
+  try {
+    if (window.Telegram.WebApp.requestFullscreen) {
+      window.Telegram.WebApp.requestFullscreen();
+    }
+  } catch (e) {
+    console.warn('Failed to request fullscreen mode:', e);
+  }
+  
+  // Set header color to match app theme
+  try {
+    if (window.Telegram.WebApp.setHeaderColor) {
+      // Use the background color from the theme or set a specific color
+      window.Telegram.WebApp.setHeaderColor('#000000');
+    }
+  } catch (e) {
+    console.warn('Failed to set header color:', e);
+  }
+  
+  // Expand the WebApp to take the whole screen if fullscreen is not supported
   if (!window.Telegram.WebApp.isExpanded) {
     window.Telegram.WebApp.expand();
   }
